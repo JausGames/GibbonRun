@@ -1,16 +1,10 @@
 using UnityEngine;
 
 public class Branch : MonoBehaviour
-{
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+{ 
+    [Header("Connector")]
+    public string connectorName = "Connector";
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    internal Transform Connector => transform.Find(connectorName); 
+     
 }
