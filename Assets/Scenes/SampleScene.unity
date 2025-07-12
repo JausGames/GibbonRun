@@ -584,6 +584,7 @@ MonoBehaviour:
   targetDistanceBelow: 5
   minDistanceBelow: 2
   width: 50
+  spacing: 8
 --- !u!23 &900170608
 MeshRenderer:
   m_ObjectHideFlags: 0
