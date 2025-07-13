@@ -19,6 +19,7 @@ public class BranchCorridorGenerator : MonoBehaviour
 
     [Header("Ground")]
     public GroundMeshGenerator groundGenerator;
+    public EndColliderGenerator endGenerator;
 
     private Transform lastConnector;
     private List<Branch> branchs = new List<Branch>();
@@ -27,6 +28,7 @@ public class BranchCorridorGenerator : MonoBehaviour
     {
         GenerateCorridor();
         groundGenerator.GenerateMesh(branchs.Select(b => b.Connector).ToList());
+        endGenerator.GenerateLevelEnd(branchs.Last());
     }
 
     void GenerateCorridor()
