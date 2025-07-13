@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public float minForwardSpeed = 5f;  // Minimum speed before MaintainForwardSpeed kicks in
+    public float defaultForwardSpeed = 10f;
+
+
     public float grappleRange = 10f;
     public float swingBoostForce = 15f;
     public float strafeSpeed = 5f;
@@ -39,7 +43,16 @@ public class Player : MonoBehaviour
 
     void MaintainForwardSpeed()
     {
-        rb.linearVelocity = transform.forward * 10f + Vector3.up * rb.linearVelocity.y;
+        Vector3 velocity = rb.linearVelocity;
+
+        // Project current velocity onto forward direction
+        float forwardSpeed = Vector3.Dot(velocity, transform.forward);
+
+        if (forwardSpeed < minForwardSpeed)
+        {
+            // Restore forward speed but preserve vertical (Y)
+            rb.linearVelocity = transform.forward * defaultForwardSpeed + Vector3.up * velocity.y;
+        }
     }
 
 
@@ -138,12 +151,22 @@ public class Player : MonoBehaviour
         Destroy(currentJoint);
         currentJoint = null;
 
-        Vector3 swingDirection = transform.forward * swingBoostForce;
+        // Vector from the swing anchor point to the player
+        Vector3 ropeDir = (transform.position - nearestPoint).normalized;
 
-        rb.linearVelocity += swingDirection;
+        // Tangent direction: perpendicular to rope and up
+        Vector3 tangentDir = Vector3.Cross(Vector3.up, ropeDir).normalized;
 
-        Debug.DrawRay(transform.position, swingDirection.normalized * 2f, Color.red, 2f);
+        // Determine swing direction (left or right) based on current velocity
+        float direction = Mathf.Sign(Vector3.Dot(rb.linearVelocity, tangentDir));
+        Vector3 swingBoost = tangentDir * direction * swingBoostForce;
+
+        rb.linearVelocity += swingBoost;
+
+        Debug.DrawRay(transform.position, swingBoost.normalized * 2f, Color.magenta, 2f);
+        Debug.Log($"Tangent boost applied: direction={swingBoost.normalized}, magnitude={swingBoost.magnitude}");
     }
+
 
     void OnDrawGizmosSelected()
     {
