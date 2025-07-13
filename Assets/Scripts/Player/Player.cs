@@ -193,6 +193,7 @@ public class Player : MonoBehaviour
         Debug.Log($"Tangent boost applied: direction={swingBoost.normalized}, magnitude={swingBoost.magnitude}");
     }
 
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
