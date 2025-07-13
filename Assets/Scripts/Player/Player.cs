@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -25,6 +26,7 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
     private PlayerInputs inputs;
 
+    private Animator animator;
     private SpringJoint currentJoint;
     private LineRenderer ropeLine;
 
@@ -34,6 +36,7 @@ public class Player : MonoBehaviour
 
     void Start()
     {
+        animator = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody>();
         inputs = GetComponent<PlayerInputs>();
         rb.linearVelocity = transform.forward * startingForwardSpeed;
@@ -56,6 +59,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         FindNearestBranch();
+        UpdateAnimator();
 
         if (inputs.Jump)
         {
@@ -90,6 +94,13 @@ public class Player : MonoBehaviour
         {
             ropeLine.enabled = false;
         }
+    }
+
+    private void UpdateAnimator()
+    {
+        float currSpeed = Mathf.InverseLerp(minForwardSpeed, startingForwardSpeed, rb.linearVelocity.magnitude);
+        animator.SetFloat("Speed", Mathf.MoveTowards(animator.GetFloat("Speed"), currSpeed, Time.deltaTime * 2f));
+        animator.SetBool("Grounded", isGrounded);
     }
 
     void CheckGrounded()
@@ -169,8 +180,8 @@ public class Player : MonoBehaviour
         currentJoint.connectedAnchor = localAnchor;
 
         currentJoint.maxDistance = distance * 0.9f;
-        currentJoint.minDistance = distance * 0.7f;
-        currentJoint.spring = 40;
+        currentJoint.minDistance = distance * 0.6f;
+        currentJoint.spring = 100;
         currentJoint.damper = 4f;
         currentJoint.enableCollision = false;
     }

@@ -230,8 +230,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 330585546}
   - {fileID: 1698092278}
+  - {fileID: 330585546}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &33199496
@@ -317,7 +317,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 80
+  field of view: 75
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -524,10 +524,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 738549186}
+  - component: {fileID: 738549182}
   - component: {fileID: 738549185}
   - component: {fileID: 738549184}
   - component: {fileID: 738549183}
-  - component: {fileID: 738549182}
   m_Layer: 0
   m_Name: EndCollider
   m_TagString: Untagged
@@ -696,9 +696,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 900170610}
+  - component: {fileID: 900170607}
   - component: {fileID: 900170609}
   - component: {fileID: 900170608}
-  - component: {fileID: 900170607}
   - component: {fileID: 900170611}
   m_Layer: 0
   m_Name: Ground
@@ -1205,6 +1205,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 389a5184bfef7f4468ebbcb9942eb0ee, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 7e4077f4124d8824da78ef7efec200fe, type: 2}
     - target: {fileID: 6119565267036148674, guid: 389a5184bfef7f4468ebbcb9942eb0ee, type: 3}
       propertyPath: m_Layer
       value: 3
