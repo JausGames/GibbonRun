@@ -204,8 +204,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grappleRange: 10
+  grappleRadius: 6
   swingBoostForce: 50
-  strafeSpeed: 10
+  strafeSpeed: 12
   branchLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -978,8 +979,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchPrefabs:
-  - {fileID: 5408410641187526032, guid: 2ffa2b9b11e382a4a9cccfff6a5ed84f, type: 3}
-  - {fileID: 5408410641187526032, guid: a1b1ceb66a112054dbd087414f1baa7f, type: 3}
+  - {fileID: 1755767500867287624, guid: 2ffa2b9b11e382a4a9cccfff6a5ed84f, type: 3}
+  - {fileID: 1755767500867287624, guid: 86093a14b9893444e9f028f531604d06, type: 3}
   numberOfBranches: 50
   minForwardOffset: 12
   maxForwardOffset: 24

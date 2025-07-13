@@ -3,6 +3,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     public float grappleRange = 10f;
+    public float grappleRadius = 6f;
     public float swingBoostForce = 15f;
     public float strafeSpeed = 5f;
 
@@ -10,11 +11,10 @@ public class Player : MonoBehaviour
 
     private Rigidbody rb;
     private PlayerInputs inputs;
-    private Transform nearestBranch;
-    private Vector3 nearestPoint;
+    [SerializeField] private Transform nearestBranch;
+    [SerializeField] private Vector3 nearestPoint;
     private SpringJoint currentJoint;
     private LineRenderer ropeLine;
-
 
     void Start()
     {
@@ -54,7 +54,7 @@ public class Player : MonoBehaviour
                 float dist = Vector3.Distance(transform.position, nearestPoint);
                 if (dist <= grappleRange)
                 {
-                      CreateGrappleJoint(nearestBranch, nearestPoint, dist);
+                    CreateGrappleJoint(nearestBranch, nearestPoint, dist);
                 }
             }
         }
@@ -62,7 +62,7 @@ public class Player : MonoBehaviour
         {
             ReleaseGrapple();
         }
-        
+
         if (currentJoint != null)
         {
             ropeLine.enabled = true;
@@ -89,7 +89,7 @@ public class Player : MonoBehaviour
 
     void FindNearestBranch()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, grappleRange, branchLayer);
+        Collider[] hits = Physics.OverlapCapsule(transform.position, transform.position + Vector3.up * grappleRange, grappleRadius, branchLayer);
         float minDist = float.MaxValue;
         nearestBranch = null;
 
@@ -104,32 +104,35 @@ public class Player : MonoBehaviour
             float dist = Vector3.Distance(transform.position, hit.transform.position);
             if (dist < minDist)
             {
+                Debug.Log($"Found branch {hit.gameObject}");
                 minDist = dist;
                 nearestBranch = hit.transform.parent;
-                nearestPoint = hit.ClosestPoint(transform.position);
+                nearestPoint = hit.ClosestPoint(transform.position); 
+                Debug.DrawLine(transform.position, nearestPoint, Color.yellow, 1f); 
+
             }
         }
     }
     void CreateGrappleJoint(Transform target, Vector3 nearestPoint, float distance)
     {
         currentJoint = gameObject.AddComponent<SpringJoint>();
-        Rigidbody connectedRb = target.GetComponent<Rigidbody>() ?? target.GetComponentInParent<Rigidbody>();
+        Rigidbody connectedRb = target.GetComponent<Rigidbody>();
         currentJoint.connectedBody = connectedRb;
 
-        currentJoint.autoConfigureConnectedAnchor = false;
+        currentJoint.autoConfigureConnectedAnchor = true;
         currentJoint.anchor = Vector3.zero;
 
         // Convert world position to local space of the branch
         Vector3 localAnchor = target.InverseTransformPoint(nearestPoint);
-        currentJoint.connectedAnchor = localAnchor;
+        currentJoint.connectedAnchor = Vector3.zero;
 
-        currentJoint.maxDistance = distance * 0.8f;
-        currentJoint.minDistance = 0;
-        currentJoint.spring = 100f;
-        currentJoint.damper = 5f;
+        currentJoint.maxDistance = distance * 0.6f;
+        currentJoint.minDistance = .5f;
+        currentJoint.spring = 200f;
+        currentJoint.damper = 2f;
         currentJoint.enableCollision = false;
 
-        Debug.Log($"Created Joint on {currentJoint.connectedBody} at local anchor {localAnchor}");
+        //Debug.Log($"Created Joint on {currentJoint.connectedBody} at local anchor {localAnchor}");
     }
 
 
@@ -149,5 +152,7 @@ public class Player : MonoBehaviour
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, grappleRange);
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(nearestPoint, .5f);
     }
 }
