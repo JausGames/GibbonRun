@@ -1,26 +1,42 @@
+using System.Linq;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    [Header("Movement Settings")]
+    public float minForwardSpeed = 5f;
+    public float startingForwardSpeed = 10f;
+    public float strafeSpeed = 5f;
+    public float jumpForce = 10f;
+
+    [Header("Grapple Settings")]
     public float grappleRange = 10f;
     public float grappleRadius = 6f;
     public float swingBoostForce = 15f;
-    public float strafeSpeed = 5f;
+    public LayerMask branchLayer; 
+    private Transform nearestBranch;
+    private Vector3 nearestPoint;
 
-    public LayerMask branchLayer;
+
+    [Header("Ground Settings")]
+    public float groundCheckDistance = 1f;
+    public LayerMask groundLayer;
 
     private Rigidbody rb;
     private PlayerInputs inputs;
-    [SerializeField] private Transform nearestBranch;
-    [SerializeField] private Vector3 nearestPoint;
+
     private SpringJoint currentJoint;
     private LineRenderer ropeLine;
+
+    private bool isGrounded = false;
+    private bool wasGrounded = false;
+    private bool hasJumpedSinceGrounded = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         inputs = GetComponent<PlayerInputs>();
-        rb.linearVelocity = transform.forward * 10f; // Adjust 10f for desired speed
+        rb.linearVelocity = transform.forward * startingForwardSpeed;
 
         ropeLine = gameObject.AddComponent<LineRenderer>();
         ropeLine.positionCount = 2;
@@ -28,20 +44,14 @@ public class Player : MonoBehaviour
         ropeLine.startWidth = 0.05f;
         ropeLine.endWidth = 0.05f;
         ropeLine.enabled = false;
-
     }
 
     void FixedUpdate()
     {
+        CheckGrounded();
         MaintainForwardSpeed();
         ApplyStrafeMovement();
     }
-
-    void MaintainForwardSpeed()
-    {
-        rb.linearVelocity = transform.forward * 10f + Vector3.up * rb.linearVelocity.y;
-    }
-
 
     void Update()
     {
@@ -49,9 +59,16 @@ public class Player : MonoBehaviour
 
         if (inputs.Jump)
         {
-            if (currentJoint == null && nearestBranch != null)
+            if (isGrounded && !hasJumpedSinceGrounded)
             {
-                float dist = Vector3.Distance(transform.position, nearestPoint);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
+                hasJumpedSinceGrounded = true;
+                inputs.Jump = false;
+            }
+            else if (!isGrounded && hasJumpedSinceGrounded && currentJoint == null && nearestBranch != null)
+            {
+
+                float dist = (transform.position - nearestPoint).magnitude;
                 if (dist <= grappleRange)
                 {
                     CreateGrappleJoint(nearestBranch, nearestPoint, dist);
@@ -73,79 +90,107 @@ public class Player : MonoBehaviour
         {
             ropeLine.enabled = false;
         }
-
     }
+
+    void CheckGrounded()
+    {
+        wasGrounded = isGrounded;
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
+
+        if (isGrounded && !wasGrounded)
+        {
+            if (currentJoint != null)
+            {
+                ReleaseGrapple(applyBoost: false);
+            }
+
+            hasJumpedSinceGrounded = false;
+            inputs.Jump = false;
+        }
+    }
+
+    void MaintainForwardSpeed()
+    {
+        Vector3 velocity = rb.linearVelocity;
+        float forwardSpeed = Vector3.Dot(velocity, transform.forward);
+
+        if (forwardSpeed < minForwardSpeed && currentJoint == null)
+        {
+            rb.linearVelocity = transform.forward * minForwardSpeed + Vector3.up * velocity.y;
+        }
+    }
+
     void ApplyStrafeMovement()
     {
-        // Convert 2D input to 3D strafe direction (X axis)
         Vector3 rightDir = transform.right;
         Vector3 strafe = rightDir * inputs.Move.x * strafeSpeed;
-
-        // Keep current forward + vertical velocity
         Vector3 current = rb.linearVelocity;
         rb.linearVelocity = new Vector3(strafe.x, current.y, current.z);
     }
 
-
     void FindNearestBranch()
     {
-        Collider[] hits = Physics.OverlapCapsule(transform.position, transform.position + Vector3.up * grappleRange, grappleRadius, branchLayer);
-        float minDist = float.MaxValue;
+        if (currentJoint) return;
+
+        Collider[] hits = Physics.OverlapCapsule(
+            transform.position,
+            transform.position + Vector3.up * grappleRange,
+            grappleRadius,
+            branchLayer
+        );
+
         nearestBranch = null;
 
-        foreach (var hit in hits)
+        var hit = hits.Where(h =>
         {
-            Vector3 toBranch = hit.transform.position - transform.position;
+            Vector3 toBranch = h.transform.position - transform.position;
             float forwardDot = Vector3.Dot(transform.forward.normalized, toBranch.normalized);
+            return forwardDot > 0f;
+        }).OrderBy(h => (transform.position - h.ClosestPoint(transform.position)).magnitude).FirstOrDefault();
 
-            // Only consider branches in front (dot > 0 means in front)
-            if (forwardDot <= 0f)
-                continue;
-            float dist = Vector3.Distance(transform.position, hit.transform.position);
-            if (dist < minDist)
-            {
-                Debug.Log($"Found branch {hit.gameObject}");
-                minDist = dist;
-                nearestBranch = hit.transform.parent;
-                nearestPoint = hit.ClosestPoint(transform.position); 
-                Debug.DrawLine(transform.position, nearestPoint, Color.yellow, 1f); 
-
-            }
+        if (hit != null)
+        {
+            nearestPoint = hit.ClosestPoint(transform.position);
+            nearestBranch = hit.transform.parent.parent;
+            Debug.DrawLine(transform.position, nearestPoint, Color.yellow, 1f);
         }
     }
+
     void CreateGrappleJoint(Transform target, Vector3 nearestPoint, float distance)
     {
         currentJoint = gameObject.AddComponent<SpringJoint>();
         Rigidbody connectedRb = target.GetComponent<Rigidbody>();
         currentJoint.connectedBody = connectedRb;
 
-        currentJoint.autoConfigureConnectedAnchor = true;
+        currentJoint.autoConfigureConnectedAnchor = false;
         currentJoint.anchor = Vector3.zero;
 
-        // Convert world position to local space of the branch
         Vector3 localAnchor = target.InverseTransformPoint(nearestPoint);
-        currentJoint.connectedAnchor = Vector3.zero;
+        currentJoint.connectedAnchor = localAnchor;
 
-        currentJoint.maxDistance = distance * 0.6f;
-        currentJoint.minDistance = .5f;
-        currentJoint.spring = 200f;
-        currentJoint.damper = 2f;
+        currentJoint.maxDistance = distance * 0.9f;
+        currentJoint.minDistance = distance * 0.7f;
+        currentJoint.spring = 40;
+        currentJoint.damper = 4f;
         currentJoint.enableCollision = false;
-
-        //Debug.Log($"Created Joint on {currentJoint.connectedBody} at local anchor {localAnchor}");
     }
 
-
-    void ReleaseGrapple()
+    void ReleaseGrapple(bool applyBoost = true)
     {
         Destroy(currentJoint);
         currentJoint = null;
 
-        Vector3 swingDirection = transform.forward * swingBoostForce;
+        if (!applyBoost) return;
 
-        rb.linearVelocity += swingDirection;
+        Vector3 ropeDir = (transform.position - nearestPoint).normalized;
+        Vector3 tangentDir = Vector3.Cross(Vector3.up, ropeDir).normalized;
+        float direction = Mathf.Sign(Vector3.Dot(transform.forward, tangentDir));
+        Vector3 swingBoost = Vector3.Project(tangentDir, transform.forward) * direction * swingBoostForce;
 
-        Debug.DrawRay(transform.position, swingDirection.normalized * 2f, Color.red, 2f);
+        rb.linearVelocity += swingBoost;
+
+        Debug.DrawRay(transform.position, swingBoost.normalized * 2f, Color.magenta, 2f);
+        Debug.Log($"Tangent boost applied: direction={swingBoost.normalized}, magnitude={swingBoost.magnitude}");
     }
 
     void OnDrawGizmosSelected()
@@ -153,6 +198,8 @@ public class Player : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, grappleRange);
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(nearestPoint, .5f);
+        Gizmos.DrawWireSphere(nearestPoint, 0.5f);
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
     }
 }

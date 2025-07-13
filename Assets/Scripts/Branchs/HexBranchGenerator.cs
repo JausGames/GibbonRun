@@ -30,9 +30,6 @@ public class HexBranchGenerator : MonoBehaviour
         MeshRenderer mr = meshContainer.GetComponent<MeshRenderer>();
         if (!mr) mr = meshContainer.AddComponent<MeshRenderer>();
 
-        MeshCollider mc = meshContainer.GetComponent<MeshCollider>();
-        if (!mc) mc = meshContainer.AddComponent<MeshCollider>();
-        mc.convex = true;
 
         if (branchMaterial != null)
         {
@@ -150,17 +147,54 @@ public class HexBranchGenerator : MonoBehaviour
         mesh.RecalculateNormals();
 
         mf.mesh = mesh;
-        mc.sharedMesh = mesh;
+
+        // Create new colliders parent 
+        meshContainer.transform.SetParent(meshContainer.transform, false);
+
+        // Add capsule colliders per segment
+        for (int seg = 0; seg < segmentCount; seg++)
+        {
+            int a = seg * sides;
+            int b = (seg + 1) * sides;
+
+            // Center positions of rings
+            Vector3 centerA = Vector3.zero;
+            Vector3 centerB = Vector3.zero;
+            for (int i = 0; i < sides; i++)
+            {
+                centerA += vertices[a + i];
+                centerB += vertices[b + i];
+            }
+            centerA /= sides;
+            centerB /= sides;
+
+            Vector3 segmentCenter = (centerA + centerB) / 2f;
+            Vector3 segmentDir = (centerB - centerA).normalized;
+            float segmentLength = Vector3.Distance(centerA, centerB);
+
+            GameObject capsuleObj = new GameObject($"SegmentCollider_{seg}");
+            capsuleObj.transform.SetParent(meshContainer.transform, false);
+            capsuleObj.transform.localPosition = segmentCenter;
+            capsuleObj.transform.up = segmentDir;
+            capsuleObj.transform.rotation *= capsuleObj.transform.parent.rotation;
+            capsuleObj.transform.eulerAngles += new Vector3(0f, capsuleObj.transform.parent.localEulerAngles.y, 0f);
+
+            CapsuleCollider capsule = capsuleObj.AddComponent<CapsuleCollider>();
+            capsule.radius = Mathf.Lerp(baseRadius, tipRadius, seg / (float)segmentCount);
+            capsule.height = segmentLength + capsule.radius * 2f; // Ensure full cover
+            capsule.direction = 1; // Y axis
+            capsule.isTrigger = false;
+            capsuleObj.layer = gameObject.layer; // or set LayerMask.NameToLayer("Branch");
+        }
 
         // Create connector at the tip
         GameObject connectorObj = new GameObject("Connector");
-        connectorObj.transform.SetParent(transform, false); 
+        connectorObj.transform.SetParent(transform, false);
         Vector3 worldTipPosition = meshContainer.transform.TransformPoint(finalRingCenter);
         connectorObj.transform.position = worldTipPosition;
         connectorObj.transform.forward = transform.forward;
 
-        connectorObj.transform.forward = transform.forward;
-
         return gameObject.AddComponent<Branch>();
+
     }
 }
