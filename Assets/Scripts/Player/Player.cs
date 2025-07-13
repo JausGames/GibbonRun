@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
     private PlayerInputs inputs;
     private Transform nearestBranch;
+    private Vector3 nearestPoint;
     private SpringJoint currentJoint;
     private LineRenderer ropeLine;
 
@@ -50,10 +51,10 @@ public class Player : MonoBehaviour
         {
             if (currentJoint == null && nearestBranch != null)
             {
-                float dist = Vector3.Distance(transform.position, nearestBranch.position);
+                float dist = Vector3.Distance(transform.position, nearestPoint);
                 if (dist <= grappleRange)
                 {
-                      CreateGrappleJoint(nearestBranch, dist);
+                      CreateGrappleJoint(nearestBranch, nearestPoint, dist);
                 }
             }
         }
@@ -66,7 +67,7 @@ public class Player : MonoBehaviour
         {
             ropeLine.enabled = true;
             ropeLine.SetPosition(0, transform.position);
-            ropeLine.SetPosition(1, nearestBranch.position);
+            ropeLine.SetPosition(1, nearestPoint);
         }
         else
         {
@@ -104,24 +105,33 @@ public class Player : MonoBehaviour
             if (dist < minDist)
             {
                 minDist = dist;
-                nearestBranch = hit.transform;
+                nearestBranch = hit.transform.parent;
+                nearestPoint = hit.ClosestPoint(transform.position);
             }
         }
     }
-
-    void CreateGrappleJoint(Transform target, float distance)
+    void CreateGrappleJoint(Transform target, Vector3 nearestPoint, float distance)
     {
         currentJoint = gameObject.AddComponent<SpringJoint>();
-        currentJoint.connectedBody = target.GetComponent<Rigidbody>();
+        Rigidbody connectedRb = target.GetComponent<Rigidbody>() ?? target.GetComponentInParent<Rigidbody>();
+        currentJoint.connectedBody = connectedRb;
+
         currentJoint.autoConfigureConnectedAnchor = false;
-        currentJoint.connectedAnchor = Vector3.zero;
         currentJoint.anchor = Vector3.zero;
+
+        // Convert world position to local space of the branch
+        Vector3 localAnchor = target.InverseTransformPoint(nearestPoint);
+        currentJoint.connectedAnchor = localAnchor;
+
         currentJoint.maxDistance = distance * 0.8f;
         currentJoint.minDistance = 0;
         currentJoint.spring = 100f;
         currentJoint.damper = 5f;
         currentJoint.enableCollision = false;
+
+        Debug.Log($"Created Joint on {currentJoint.connectedBody} at local anchor {localAnchor}");
     }
+
 
     void ReleaseGrapple()
     {
