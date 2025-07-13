@@ -13,6 +13,9 @@ public class PlayerInputs : MonoBehaviour
         actions.Move.performed += ctx => Move = ctx.ReadValue<Vector2>();
         actions.Move.canceled += _ => Move = Vector2.zero;
 
+        actions.MoveStick.performed += ctx => Move = ctx.ReadValue<Vector2>();
+        actions.MoveStick.canceled += _ => Move = Vector2.zero;
+
         actions.Jump.performed += _ => Jump = true;
         actions.Jump.canceled += _ => Jump = false;
     }
