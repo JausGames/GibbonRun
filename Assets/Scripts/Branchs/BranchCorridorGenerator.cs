@@ -9,71 +9,168 @@ public class BranchCorridorGenerator : MonoBehaviour
     public int numberOfBranches = 50;
 
     [Header("Path Variation")]
-    public float minForwardOffset = 4f;   // Minimum forward distance between branches
-    public float maxForwardOffset = 8f;   // Maximum forward distance
-    public float maxYawAngle = 10f;       // Y-axis curve
-    public float maxPitchAngle = 5f;      // Visual tilt
-    public float maxHeightDelta = 1f;     // Y-axis variation
-    public float startHeight = 3f;        // Starting Y position
+    public float minForwardOffset = 4f;
+    public float maxForwardOffset = 8f;
+    public float maxYawAngle = 10f;
+    public float maxPitchAngle = 5f;
+    public float maxHeightDelta = 1f;
+    public float startHeight = 3f;
     public float maxLateralDelta = 0.5f;
+    public Vector3 firstConnectorPosition = new Vector3(0f, 5f, 16f);
+
+    [Header("Secondary Paths")]
+    public int numberOfSecondaryPaths = 2;
+    public int secondaryBranches = 20;
+    public int minSplitIndex = 10;
+    public int maxJoinIndex = 40;
 
     [Header("Ground")]
     public GroundMeshGenerator groundGenerator;
     public EndColliderGenerator endGenerator;
 
+    private List<Vector3> pathPoints = new();
+    private List<Branch> branchs = new();
     private Transform lastConnector;
-    private List<Branch> branchs = new List<Branch>();
 
     void Start()
     {
-        GenerateCorridor();
-        groundGenerator.GenerateMesh(branchs.Select(b => b.Connector).ToList());
-        endGenerator.GenerateLevelEnd(branchs.Last());
-    }
-    void GenerateCorridor()
-    {
-        if (branchPrefabs == null || branchPrefabs.Count == 0)
+        // Generate main path
+        Vector3 mainStart = new Vector3(0f, startHeight, 0f);
+        Vector3 mainForward = Vector3.forward;
+        pathPoints = GeneratePath(mainStart, mainForward, numberOfBranches);
+
+        // Build main corridor
+        GenerateCorridor(pathPoints, isMain: true);
+
+        // Generate secondary paths using Bezier
+        for (int i = 0; i < numberOfSecondaryPaths; i++)
         {
-            Debug.LogError("Branch prefab list is empty!");
-            return;
+            int splitIndex = Random.Range(minSplitIndex, maxJoinIndex - secondaryBranches);
+            int joinIndex = splitIndex + secondaryBranches;
+
+            if (joinIndex >= pathPoints.Count)
+                continue;
+
+            Vector3 start = pathPoints[splitIndex];
+            Vector3 end = pathPoints[joinIndex];
+
+            // Control points with lateral offset
+            Vector3 pathDir = (end - start).normalized;
+            Vector3 lateral = Vector3.Cross(Vector3.up, pathDir).normalized;
+            float lateralOffset = 15f;
+
+            Vector3 control1 = start + lateral * lateralOffset + Vector3.up * 5f;
+            Vector3 control2 = end + lateral * lateralOffset + Vector3.up * 5f;
+
+            List<Vector3> bezierPath = GenerateBezierPath(start, control1, control2, end, secondaryBranches);
+            GenerateCorridor(bezierPath, isMain: false);
         }
 
-        Vector3 currentPosition = new Vector3(transform.position.x, startHeight, transform.position.z);
+        groundGenerator.GenerateMesh(branchs.Select(b => b.Connector.position).ToList());
+        endGenerator.GenerateLevelEnd(branchs.Last());
+    }
 
-        for (int i = 0; i < numberOfBranches; i++)
+    List<Vector3> GeneratePath(Vector3 startPos, Vector3 forward, int numBranches)
+    {
+        List<Vector3> controlPoints = new();
+        Vector3 pos = startPos;
+
+        for (int i = 0; i < numBranches; i++)
         {
-            HexBranchGenerator selectedPrefab = branchPrefabs[Random.Range(0, branchPrefabs.Count)];
-
             float forwardOffset = Random.Range(minForwardOffset, maxForwardOffset);
             float verticalOffset = Random.Range(-maxHeightDelta, maxHeightDelta);
+            float yaw = Random.Range(-maxYawAngle, maxYawAngle);
 
-            Vector3 forwardVector = Vector3.forward; // default
-            Vector3 basePosition = currentPosition;
+            forward = Quaternion.Euler(0, yaw, 0) * forward;
+            pos += forward * forwardOffset + new Vector3(0, verticalOffset, 0);
+            controlPoints.Add(pos);
+        }
 
-            if (lastConnector != null)
-            {
-                forwardVector = lastConnector.forward;
-                basePosition = lastConnector.position;
-            }
+        Vector3 pre = controlPoints[0] - (controlPoints[1] - controlPoints[0]);
+        Vector3 post = controlPoints[^1] + (controlPoints[^1] - controlPoints[^2]);
+        controlPoints.Insert(0, pre);
+        controlPoints.Add(post);
 
-            Vector3 spawnPosition = basePosition + forwardVector * forwardOffset + new Vector3(0, verticalOffset, 0);
+        List<Vector3> path = new();
+        int segments = controlPoints.Count - 3;
 
-            // Instantiate branch directly, no rotation
-            HexBranchGenerator branchGen = Instantiate(
-                selectedPrefab,
-                spawnPosition,
-                Quaternion.identity,
-                transform
+        for (int i = 0; i < numBranches; i++)
+        {
+            float t = i / (float)(numBranches - 1) * segments;
+            int seg = Mathf.Clamp(Mathf.FloorToInt(t), 0, segments - 1);
+            float localT = t - seg;
+
+            Vector3 point = CatmullRom(
+                controlPoints[seg],
+                controlPoints[seg + 1],
+                controlPoints[seg + 2],
+                controlPoints[seg + 3],
+                localT
             );
 
+            path.Add(point);
+        }
+
+        return path;
+    }
+
+    List<Vector3> GenerateBezierPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, int count)
+    {
+        List<Vector3> result = new();
+        for (int i = 0; i < count; i++)
+        {
+            float t = i / (float)(count - 1);
+            Vector3 point = Mathf.Pow(1 - t, 3) * p0 +
+                            3 * Mathf.Pow(1 - t, 2) * t * p1 +
+                            3 * (1 - t) * Mathf.Pow(t, 2) * p2 +
+                            Mathf.Pow(t, 3) * p3;
+            result.Add(point);
+        }
+        return result;
+    }
+
+    void GenerateCorridor(List<Vector3> path, bool isMain)
+    {
+        Transform localLastConnector = null;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            HexBranchGenerator selectedPrefab = branchPrefabs[Random.Range(0, branchPrefabs.Count)];
+            Vector3 pathPoint = path[i];
+
+            Vector3 forward = (i < path.Count - 1)
+                ? (path[i + 1] - pathPoint).normalized
+                : (pathPoint - path[i - 1]).normalized;
+
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 up = Vector3.Cross(forward, right);
+            Quaternion pathRotation = Quaternion.LookRotation(forward, up);
+
+            float pitch = Random.Range(-maxPitchAngle, maxPitchAngle);
+            Quaternion finalRotation = pathRotation * Quaternion.Euler(pitch, 0, 0);
+
+            HexBranchGenerator branchGen = Instantiate(selectedPrefab, Vector3.zero, finalRotation, transform);
             Branch branch = branchGen.GenerateBranch();
 
-            // Adjust lateral alignment if needed
-            Transform connector = branch.Connector;
-            if (connector != null && lastConnector != null)
+            if (branch.Connector == null)
             {
-                Vector3 lateralAxis = lastConnector.parent.right;
-                Vector3 delta = lastConnector.position - connector.position;
+                Debug.LogWarning($"Branch {branch.name} has no connector.");
+                continue;
+            }
+
+            Vector3 offset = pathPoint - branch.Connector.position;
+            branch.transform.position += offset;
+
+            if (i == 0 && isMain)
+            {
+                Vector3 delta = firstConnectorPosition - branch.Connector.position;
+                branch.transform.position += delta;
+            }
+
+            if (i > 0 && localLastConnector != null)
+            {
+                Vector3 lateralAxis = localLastConnector.parent.right;
+                Vector3 delta = localLastConnector.position - branch.Connector.position;
                 Vector3 lateralOffset = Vector3.Project(delta, lateralAxis);
 
                 if (lateralOffset.magnitude > maxLateralDelta)
@@ -83,10 +180,37 @@ public class BranchCorridorGenerator : MonoBehaviour
                 }
             }
 
-            currentPosition = branch.transform.position;
-            lastConnector = connector;
-            branchs.Add(branch);
+            localLastConnector = branch.Connector;
+
+            if (isMain)
+            {
+                lastConnector = localLastConnector;
+                branchs.Add(branch);
+            }
         }
     }
 
+    Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+    {
+        return 0.5f * (
+            (2f * p1) +
+            (-p0 + p2) * t +
+            (2f * p0 - 5f * p1 + 4f * p2 - p3) * t * t +
+            (-p0 + 3f * p1 - 3f * p2 + p3) * t * t * t
+        );
+    }
+
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        if (pathPoints != null)
+        {
+            foreach (Vector3 point in pathPoints)
+            {
+                Gizmos.DrawSphere(point, 5f);
+            }
+        }
+    }
+#endif
 }

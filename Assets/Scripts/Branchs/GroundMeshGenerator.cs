@@ -7,40 +7,33 @@ public class GroundMeshGenerator : MonoBehaviour
     public float targetDistanceBelow = 3f;
     public float minDistanceBelow = 1.5f;
     public float width = 12f;
-    public float spacing = 1f; // distance between sampled points along the curve
 
-    private const int samplesPerSegment = 10;
-
-    public void GenerateMesh(List<Transform> sourcePoints)
+    public void GenerateMesh(List<Vector3> pathPoints)
     {
-        if (sourcePoints == null || sourcePoints.Count < 2)
+        if (pathPoints == null || pathPoints.Count < 2)
         {
             Debug.LogWarning("Not enough points to generate ground mesh.");
             return;
         }
 
-        // Generate smooth curve points from Catmull-Rom
-        List<Vector3> curvePoints = SampleCatmullRomSpline(sourcePoints, spacing);
-
         List<Vector3> leftVerts = new();
         List<Vector3> rightVerts = new();
 
-        for (int i = 0; i < curvePoints.Count; i++)
+        for (int i = 0; i < pathPoints.Count; i++)
         {
-            Vector3 pt = curvePoints[i];
+            Vector3 pt = pathPoints[i];
 
-            // Determine tangent direction for right vector
+            // Compute tangent direction
             Vector3 tangent;
             if (i == 0)
-                tangent = (curvePoints[i + 1] - pt).normalized;
-            else if (i == curvePoints.Count - 1)
-                tangent = (pt - curvePoints[i - 1]).normalized;
+                tangent = (pathPoints[i + 1] - pt).normalized;
+            else if (i == pathPoints.Count - 1)
+                tangent = (pt - pathPoints[i - 1]).normalized;
             else
-                tangent = (curvePoints[i + 1] - curvePoints[i - 1]).normalized;
+                tangent = (pathPoints[i + 1] - pathPoints[i - 1]).normalized;
 
             Vector3 right = Vector3.Cross(Vector3.up, tangent).normalized;
 
-            // Ground position
             float yOffset = Mathf.Max(minDistanceBelow, targetDistanceBelow);
             Vector3 groundPos = pt + Vector3.down * yOffset;
 
@@ -60,8 +53,9 @@ public class GroundMeshGenerator : MonoBehaviour
             vertices[i * 2] = leftVerts[i];
             vertices[i * 2 + 1] = rightVerts[i];
 
-            uvs[i * 2] = new Vector2(0, i / (float)(count - 1));
-            uvs[i * 2 + 1] = new Vector2(1, i / (float)(count - 1));
+            float v = i / (float)(count - 1); // for UV y-axis
+            uvs[i * 2] = new Vector2(0, v);
+            uvs[i * 2 + 1] = new Vector2(1, v);
         }
 
         int ti = 0;
@@ -88,58 +82,5 @@ public class GroundMeshGenerator : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
         GetComponent<MeshCollider>().sharedMesh = mesh;
-    }
-
-    private List<Vector3> SampleCatmullRomSpline(List<Transform> controlPoints, float spacing)
-    {
-        List<Vector3> result = new();
-        if (controlPoints.Count < 2) return result;
-
-        // Convert to positions
-        List<Vector3> points = new();
-        for (int i = 0; i < controlPoints.Count; i++)
-            points.Add(controlPoints[i].position);
-
-        // Add start and end extrapolated points for spline continuity
-        points.Insert(0, points[0] + (points[0] - points[1]));
-        points.Add(points[points.Count - 1] + (points[points.Count - 1] - points[points.Count - 2]));
-
-        Vector3 prev = CatmullRom(points[0], points[1], points[2], points[3], 0f);
-        result.Add(prev);
-
-        float distanceSoFar = 0f;
-
-        for (int i = 0; i < points.Count - 3; i++)
-        {
-            for (int j = 1; j <= samplesPerSegment; j++)
-            {
-                float t = j / (float)samplesPerSegment;
-                Vector3 curr = CatmullRom(points[i], points[i + 1], points[i + 2], points[i + 3], t);
-
-                float segmentDist = Vector3.Distance(prev, curr);
-                distanceSoFar += segmentDist;
-
-                if (distanceSoFar >= spacing)
-                {
-                    result.Add(curr);
-                    distanceSoFar = 0f;
-                }
-
-                prev = curr;
-            }
-        }
-
-        return result;
-    }
-
-    private Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-    {
-        // Standard Catmull-Rom spline formula
-        return 0.5f * (
-            (2 * p1) +
-            (-p0 + p2) * t +
-            (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
-            (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t
-        );
     }
 }
