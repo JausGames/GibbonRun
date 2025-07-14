@@ -418,8 +418,8 @@ MonoBehaviour:
   camera: {fileID: 0}
   cameraTarget: {fileID: 33199495}
   moveSpeed: 4
-  rotationSpeed: 3
-  jumpForce: 16
+  rotationSpeed: 2
+  jumpForce: 18
   gravityMultiplier: 1.5
   timeBeforeMaxGravity: 2
   gravityPerTimeUngrouded:
@@ -450,11 +450,11 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 1
-  startingForwardSpeed: 24
-  minForwardSpeed: 12
-  grappleRange: 16
-  grappleRadius: 10
-  swingBoostForce: 25
+  startingForwardSpeed: 30
+  minForwardSpeed: 20
+  grappleRange: 20
+  grappleRadius: 12
+  swingBoostForce: 30
   branchLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -2805,9 +2805,9 @@ MonoBehaviour:
   numberOfBranches: 50
   minForwardOffset: 20
   maxForwardOffset: 40
-  maxYawAngle: 22
-  maxPitchAngle: 14
-  maxHeightDelta: 5
+  maxYawAngle: 25
+  maxPitchAngle: 15
+  maxHeightDelta: 8
   startHeight: 5
   maxLateralDelta: 2
   firstConnectorPosition: {x: 0, y: 5, z: 10}

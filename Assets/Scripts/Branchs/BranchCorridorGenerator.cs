@@ -34,15 +34,12 @@ public class BranchCorridorGenerator : MonoBehaviour
 
     void Start()
     {
-        // Generate main path
         Vector3 mainStart = new Vector3(0f, startHeight, 0f);
         Vector3 mainForward = Vector3.forward;
         pathPoints = GeneratePath(mainStart, mainForward, numberOfBranches);
 
-        // Build main corridor
         GenerateCorridor(pathPoints, isMain: true);
 
-        // Generate secondary paths using Bezier
         for (int i = 0; i < numberOfSecondaryPaths; i++)
         {
             int splitIndex = Random.Range(minSplitIndex, maxJoinIndex - secondaryBranches);
@@ -51,18 +48,22 @@ public class BranchCorridorGenerator : MonoBehaviour
             if (joinIndex >= pathPoints.Count)
                 continue;
 
-            Vector3 start = pathPoints[splitIndex];
-            Vector3 end = pathPoints[joinIndex];
+            Vector3 splitPoint = pathPoints[splitIndex];
+            Vector3 joinPoint = pathPoints[joinIndex];
 
-            // Control points with lateral offset
-            Vector3 pathDir = (end - start).normalized;
-            Vector3 lateral = Vector3.Cross(Vector3.up, pathDir).normalized;
+            // Generate offDirection with min angle between paths
+            Vector3 mainDirection = (joinPoint - splitPoint).normalized;
+            float angle = Random.Range(45f, 120f) * (Random.value < 0.5f ? -1f : 1f);
+            Vector3 offDirection = Quaternion.Euler(0, angle, 0) * mainDirection;
+
+            // Generate lateral Bezier curve
+            Vector3 lateral = Vector3.Cross(Vector3.up, mainDirection).normalized;
             float lateralOffset = 15f;
 
-            Vector3 control1 = start + lateral * lateralOffset + Vector3.up * 5f;
-            Vector3 control2 = end + lateral * lateralOffset + Vector3.up * 5f;
+            Vector3 control1 = splitPoint + lateral * lateralOffset + Vector3.up * 5f;
+            Vector3 control2 = joinPoint + lateral * lateralOffset + Vector3.up * 5f;
 
-            List<Vector3> bezierPath = GenerateBezierPath(start, control1, control2, end, secondaryBranches);
+            List<Vector3> bezierPath = GenerateBezierPath(splitPoint, control1, control2, joinPoint, secondaryBranches);
             GenerateCorridor(bezierPath, isMain: false);
         }
 
@@ -133,7 +134,10 @@ public class BranchCorridorGenerator : MonoBehaviour
     {
         Transform localLastConnector = null;
 
-        for (int i = 0; i < path.Count; i++)
+        int startIdx = isMain ? 0 : 1;
+        int endIdx = isMain ? path.Count : path.Count - 1;
+
+        for (int i = startIdx; i < endIdx; i++)
         {
             HexBranchGenerator selectedPrefab = branchPrefabs[Random.Range(0, branchPrefabs.Count)];
             Vector3 pathPoint = path[i];
