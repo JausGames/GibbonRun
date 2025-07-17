@@ -31,9 +31,10 @@ public class BranchCorridorGenerator : MonoBehaviour
     private List<Vector3> pathPoints = new();
     private List<Branch> branchs = new();
     private Transform lastConnector;
-
-    internal void GenerateLevel()
+ 
+    internal void GenerateLevel() 
     {
+        Clean();
         Vector3 mainStart = new Vector3(0f, startHeight, 0f);
         Vector3 mainForward = Vector3.forward;
         pathPoints = GeneratePath(mainStart, mainForward, numberOfBranches);
@@ -114,6 +115,34 @@ public class BranchCorridorGenerator : MonoBehaviour
 
         return path;
     }
+    
+    void Clean()
+    {
+        // Destroy all instantiated branches
+        foreach (var branch in branchs)
+        {
+            if (branch != null)
+            {
+                DestroyImmediate(branch.gameObject);
+            }
+        }
+    
+        branchs.Clear();
+        pathPoints.Clear();
+        lastConnector = null;
+    
+        // Clean ground and end generators
+        if (groundGenerator != null)
+        {
+            groundGenerator.Clean();
+        }
+    
+        if (endGenerator != null)
+        {
+            endGenerator.Clean();
+        }
+    }
+
 
     List<Vector3> GenerateBezierPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, int count)
     {
