@@ -1,10 +1,14 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider))]
 public class EndColliderGenerator : MonoBehaviour
 {
     public Vector3 boxSize = new Vector3(4f, 4f, 2f); // Width, Height, Depth
     public string connectorName = "Connector";
+    public UnityEvent OnTriggeredEvent { get; } = new UnityEvent();
+
+    private void OnTriggerEnter(Collider other) => onTriggeredEvent.Invoke();
 
     public void GenerateLevelEnd(Branch branch)
     {
