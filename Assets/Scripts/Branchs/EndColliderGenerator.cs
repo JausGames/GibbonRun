@@ -5,6 +5,8 @@ public class EndColliderGenerator : MonoBehaviour
 {
     public Vector3 boxSize = new Vector3(4f, 4f, 2f); // Width, Height, Depth
     public string connectorName = "Connector";
+    MeshFilter filter; 
+    BoxCollider collider;
 
     public void GenerateLevelEnd(Branch branch)
     {
@@ -28,18 +30,16 @@ public class EndColliderGenerator : MonoBehaviour
         Vector3 center = Vector3.Lerp(branchTransform.position, connector.position, 0.5f);
 
         // Create box mesh
-        Mesh mesh = CreateBoxMesh(boxSize);
-        MeshFilter mf = GetComponent<MeshFilter>();
-        mf.mesh = mesh;
+        Mesh mesh = CreateBoxMesh(boxSize); 
+        filter.mesh = mesh;
 
         // Set transform
         transform.position = center;
         transform.rotation = lookRotation;
 
-        // Set collider
-        BoxCollider box = GetComponent<BoxCollider>();
-        box.size = boxSize;
-        box.center = Vector3.zero; // Since transform is centered
+        // Set collider 
+        collider.size = boxSize;
+        collider.center = Vector3.zero; // Since transform is centered
     }
 
     private Mesh CreateBoxMesh(Vector3 size)
@@ -75,4 +75,25 @@ public class EndColliderGenerator : MonoBehaviour
         mesh.RecalculateNormals();
         return mesh;
     }
+    public void Clean()
+    {
+        // Clean up the mesh 
+        if (filter != null)
+        { 
+            DestroyImmediate(filter.sharedMesh); 
+            filter.mesh = null;
+        }
+    
+        // Reset collider 
+        if (collider != null)
+        {
+            collider.size = Vector3.zero;
+            collider.center = Vector3.zero;
+        }
+    
+        // Optionally reset transform (position/rotation), if desired
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+    }
+
 }
