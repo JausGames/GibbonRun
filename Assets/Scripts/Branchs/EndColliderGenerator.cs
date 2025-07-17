@@ -5,13 +5,19 @@ using UnityEngine.Events;
 public class EndColliderGenerator : MonoBehaviour
 {
     public Vector3 boxSize = new Vector3(4f, 4f, 2f); // Width, Height, Depth
-    public string connectorName = "Connector"; 
-    MeshFilter filter; 
-    BoxCollider collider 
-    
+    public string connectorName = "Connector";
+    MeshFilter filter;
+    new BoxCollider collider;
+
     public UnityEvent OnTriggeredEvent { get; } = new UnityEvent();
 
-    private void OnTriggerEnter(Collider other) => onTriggeredEvent.Invoke(); 
+    private void OnTriggerEnter(Collider other) => OnTriggeredEvent.Invoke();
+
+    private void Awake()
+    {
+        filter = GetComponent<MeshFilter>();
+        collider = GetComponent<BoxCollider>();
+    }
 
     public void GenerateLevelEnd(Branch branch)
     {
@@ -35,7 +41,7 @@ public class EndColliderGenerator : MonoBehaviour
         Vector3 center = Vector3.Lerp(branchTransform.position, connector.position, 0.5f);
 
         // Create box mesh
-        Mesh mesh = CreateBoxMesh(boxSize); 
+        Mesh mesh = CreateBoxMesh(boxSize);
         filter.mesh = mesh;
 
         // Set transform
@@ -84,18 +90,18 @@ public class EndColliderGenerator : MonoBehaviour
     {
         // Clean up the mesh 
         if (filter != null)
-        { 
-            DestroyImmediate(filter.sharedMesh); 
+        {
+            DestroyImmediate(filter.sharedMesh);
             filter.mesh = null;
         }
-    
+
         // Reset collider 
         if (collider != null)
         {
             collider.size = Vector3.zero;
             collider.center = Vector3.zero;
         }
-    
+
         // Optionally reset transform (position/rotation), if desired
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;

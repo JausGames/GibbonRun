@@ -79,6 +79,7 @@ public class PlayerController : MonoBehaviour
     {
         if (inputs.Jump && isGrounded)
         {
+            rb.linearVelocity = rb.linearVelocity - rb.linearVelocity.y * Vector3.up;
             rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
             inputs.Jump = false;
         }
@@ -134,6 +135,7 @@ public class PlayerController : MonoBehaviour
         flatForward.y = 0; flatForward.Normalize();
 
         var projection = Vector3.Project(rb.linearVelocity, flatForward);
+        projection = Vector3.Dot(projection, flatForward) < 0 ? -projection : projection;
         if (projection.magnitude < minForwardSpeed) projection = projection.normalized * minForwardSpeed;
         rb.linearVelocity = projection + rb.linearVelocity.y * Vector3.up;
     }

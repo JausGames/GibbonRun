@@ -1,13 +1,14 @@
 using System; 
-using UnityEngine.UnitEvents;
+using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class LevelCompletedUi : MonoBehaviour
 {  
-    private UnityEvent NextLevelEvent { get; } = new UnityEvent(); 
-    [SerializedField] private Button nextButton; 
+    internal UnityEvent NextLevelEvent { get; } = new UnityEvent(); 
+    [SerializeField] private Button nextButton; 
 
-    private void Awake = nextButton.OnClick.AddListener(NextLevelEvent.Invoke); 
+    private void Awake() => nextButton.onClick.AddListener(NextLevelEvent.Invoke); 
 
     internal void Display(bool value) => gameObject.SetActive(value);
 }

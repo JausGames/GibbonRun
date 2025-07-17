@@ -29,7 +29,8 @@ public class BranchCorridorGenerator : MonoBehaviour
     public EndColliderGenerator endGenerator;
 
     private List<Vector3> pathPoints = new();
-    private List<Branch> branchs = new();
+    private List<Branch> mainBranchs = new();
+    private List<Branch> secondaryBranchs = new();
     private Transform lastConnector;
  
     internal void GenerateLevel() 
@@ -68,8 +69,8 @@ public class BranchCorridorGenerator : MonoBehaviour
             GenerateCorridor(bezierPath, isMain: false);
         }
 
-        groundGenerator.GenerateMesh(branchs.Select(b => b.Connector.position).ToList());
-        endGenerator.GenerateLevelEnd(branchs.Last());
+        groundGenerator.GenerateMesh(mainBranchs.Select(b => b.Connector.position).ToList());
+        endGenerator.GenerateLevelEnd(mainBranchs.Last());
     }
 
     List<Vector3> GeneratePath(Vector3 startPos, Vector3 forward, int numBranches)
@@ -114,34 +115,7 @@ public class BranchCorridorGenerator : MonoBehaviour
         }
 
         return path;
-    }
-    
-    void Clean()
-    {
-        // Destroy all instantiated branches
-        foreach (var branch in branchs)
-        {
-            if (branch != null)
-            {
-                DestroyImmediate(branch.gameObject);
-            }
-        }
-    
-        branchs.Clear();
-        pathPoints.Clear();
-        lastConnector = null;
-    
-        // Clean ground and end generators
-        if (groundGenerator != null)
-        {
-            groundGenerator.Clean();
-        }
-    
-        if (endGenerator != null)
-        {
-            endGenerator.Clean();
-        }
-    }
+    } 
 
 
     List<Vector3> GenerateBezierPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, int count)
@@ -218,8 +192,10 @@ public class BranchCorridorGenerator : MonoBehaviour
             if (isMain)
             {
                 lastConnector = localLastConnector;
-                branchs.Add(branch);
+                mainBranchs.Add(branch);
             }
+            else
+                secondaryBranchs.Add(branch);
         }
     }
 
@@ -236,13 +212,19 @@ public class BranchCorridorGenerator : MonoBehaviour
     internal void Clean()
     {
         // Destroy all instantiated branches
-        foreach (var branch in branchs)
+        foreach (var branch in mainBranchs)
         {
             if (branch != null) 
                 DestroyImmediate(branch.gameObject); 
         }
-        
-        branchs.Clear();
+        foreach (var branch in secondaryBranchs)
+        {
+            if (branch != null) 
+                DestroyImmediate(branch.gameObject); 
+        }
+
+        secondaryBranchs.Clear();
+        mainBranchs.Clear();
         pathPoints.Clear();
         lastConnector = null;
         
