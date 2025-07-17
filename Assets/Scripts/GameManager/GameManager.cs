@@ -7,15 +7,22 @@ public class GameManager : MonoBehaviour
 { 
     private Player player; 
     private EndColliderGenerator endLevel; 
+    private LevelCompletedUi endLevelUi; 
+    private BranchCorridorGenerator generator; 
 
     private void Awake
     {
         player = FindFirstObjectByType<Player>();
+        endLevelUi = GetComponentInChildren<LevelCompletedUi>();
+        endLevelUi.NextLevelEvent.AddListener(GenerateNextLevel);
         endLevel = FindFirstObjectByType<EndColliderGenerator>();
         endLevel.OnTriggeredEvent.AddListener(OnLevelCompleted);
     }
-    void OnLevelCompleted()
+    void OnLevelCompleted() => endLevelUi.Display(true);
+    void GenerateNextLevel()
     {
-        // Show end level menu
+        endLevelUi.Display(false);
+        generator.Clean();
+        generator.GenerateLevel();
     }
 }
