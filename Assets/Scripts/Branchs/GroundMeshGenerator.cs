@@ -7,6 +7,15 @@ public class GroundMeshGenerator : MonoBehaviour
     public float targetDistanceBelow = 3f;
     public float minDistanceBelow = 1.5f;
     public float width = 12f;
+    
+    MeshFilter filter;
+    MeshCollider collider;
+
+    private void Awake()
+    {
+        filter = GetComponent<MeshFilter>();
+        collider = GetComponent<MeshCollider>();
+    }
 
     public void GenerateMesh(List<Vector3> pathPoints)
     {
@@ -80,7 +89,20 @@ public class GroundMeshGenerator : MonoBehaviour
         mesh.uv = uvs;
         mesh.RecalculateNormals();
 
-        GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshCollider>().sharedMesh = mesh;
+        filter.mesh = mesh;
+        collider.sharedMesh = mesh;
     }
+    
+    public void Clean()
+    {  
+        if (filter != null)
+        { 
+            DestroyImmediate(filter.sharedMesh); 
+            filter.mesh = null;
+        }
+    
+        if (collider != null)
+            collider.sharedMesh = null; 
+    }
+
 }

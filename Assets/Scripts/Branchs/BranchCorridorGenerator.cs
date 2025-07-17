@@ -31,8 +31,8 @@ public class BranchCorridorGenerator : MonoBehaviour
     private List<Vector3> pathPoints = new();
     private List<Branch> branchs = new();
     private Transform lastConnector;
-
-    public void GenerateLevel()
+ 
+    internal void GenerateLevel() 
     {
         Clean();
         Vector3 mainStart = new Vector3(0f, startHeight, 0f);
@@ -232,6 +232,25 @@ public class BranchCorridorGenerator : MonoBehaviour
             (-p0 + 3f * p1 - 3f * p2 + p3) * t * t * t
         );
     }
+    
+    internal void Clean()
+    {
+        // Destroy all instantiated branches
+        foreach (var branch in branchs)
+        {
+            if (branch != null) 
+                DestroyImmediate(branch.gameObject); 
+        }
+        
+        branchs.Clear();
+        pathPoints.Clear();
+        lastConnector = null;
+        
+        // Clean ground and end generators
+        groundGenerator.Clean();
+        endGenerator.Clean();
+    }
+
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
