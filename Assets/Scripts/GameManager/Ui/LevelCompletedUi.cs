@@ -8,4 +8,6 @@ public class LevelCompletedUi : MonoBehaviour
     [SerializedField] private Button nextButton; 
 
     private void Awake = nextButton.OnClick.AddListener(NextLevelEvent.Invoke); 
+
+    internal void Display() => gameObject.SetActive(true);
 }
