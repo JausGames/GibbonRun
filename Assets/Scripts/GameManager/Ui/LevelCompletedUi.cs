@@ -9,5 +9,5 @@ public class LevelCompletedUi : MonoBehaviour
 
     private void Awake = nextButton.OnClick.AddListener(NextLevelEvent.Invoke); 
 
-    internal void Display() => gameObject.SetActive(true);
+    internal void Display(bool value) => gameObject.SetActive(value);
 }
