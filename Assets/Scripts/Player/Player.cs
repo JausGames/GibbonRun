@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     private Animator animator;
 
     public CinemachineFreeLook freeLookCamera;
+    public PlayerController Controller => controller;
 
     void Awake()
     {
