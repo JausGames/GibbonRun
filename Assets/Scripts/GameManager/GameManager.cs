@@ -48,11 +48,12 @@ public class GameManager : MonoBehaviour
     void StartLevel() 
     {
         player.SetKinematic(false);
-        chaser.player = player.transform; // make sure you have reference
-        chaser.baseSpeed = controller.startingForwardSpeed * 0.8f; 
+        chaser.player = player.transform;
+        chaser.baseSpeed = player.Controller.MinimumSpeed * 0.8f; 
         chaser.speedIncreaseRate = 0.05f;
         chaser.catchDistance = 3f;
-        chaser.transform.position = playerTransform.position - playerTransform.forward * 5f;
-        chaser.Start();
+        chaser.transform.position = player.transform.position - player.transform.forward * 5f;
+    
+        chaser.StartChase(); 
     }
 }
