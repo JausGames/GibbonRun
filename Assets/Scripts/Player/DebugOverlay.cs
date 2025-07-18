@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public class DebugOverlay : MonoBehaviour
 {
+    public Canvas canvas;
     public TMP_Text stateText;
     public TMP_Text metricsText;
     public TMP_Text logText;
@@ -43,4 +44,6 @@ public class DebugOverlay : MonoBehaviour
 
         eventLog.Enqueue($"[{Time.time:0.0}s] {message}");
     }
+
+    public void Toggle() => canvas.enabled = !canvas.enabled;
 }
