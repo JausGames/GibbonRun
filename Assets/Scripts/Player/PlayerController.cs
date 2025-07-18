@@ -82,6 +82,8 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = rb.linearVelocity - rb.linearVelocity.y * Vector3.up;
             rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
             inputs.Jump = false;
+            
+            DebugOverlayLog("Jumped");
         }
         if (!isGrounded)
         {
@@ -219,6 +221,8 @@ public class PlayerController : MonoBehaviour
 
         if (arms.IndexOf(currentArm) == 0) animator.SetBool("SwingL", true);
         else animator.SetBool("SwingR", true);
+        
+        DebugOverlayLog("Grappled");
     }
 
     void ReleaseGrapple(bool applyBoost = true)
@@ -275,6 +279,7 @@ public class PlayerController : MonoBehaviour
         Debug.DrawRay(transform.position, swingBoost.normalized * 2f, Color.magenta, 2f);
         Debug.Log($"Swing boost applied: angle={angle}, magnitude={swingBoost.magnitude}");
 
+        DebugOverlayLog("Released");
     }
 
     void OnDrawGizmosSelected()
@@ -285,5 +290,10 @@ public class PlayerController : MonoBehaviour
         Gizmos.DrawWireSphere(nearestPoint, 0.5f);
         Gizmos.color = Color.green;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
+    }
+    
+    private void DebugOverlayLog(string message)
+    {
+        FindObjectOfType<DebugOverlay>()?.LogEvent(message);
     }
 }
