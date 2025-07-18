@@ -24,6 +24,9 @@ public class Player : MonoBehaviour
     private void Update()
     {
         UpdateAnimator();
+        
+        if (Input.GetKeyDown(KeyCode.F2))
+            FindObjectOfType<DebugOverlay>()?.Toggle(); 
     }
 
 
