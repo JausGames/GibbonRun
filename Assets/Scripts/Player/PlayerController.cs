@@ -269,6 +269,8 @@ public class PlayerController : MonoBehaviour
 
         var ui = Instantiate(grappleUi, canvas.transform);
         ui.PlayAnim(boost / swingBoostForce);
+        
+        ScoreManager.Instance?.RegisterSwingSuccess();
 
         Debug.DrawRay(transform.position, swingBoost.normalized * 2f, Color.magenta, 2f);
         Debug.Log($"Swing boost applied: angle={angle}, magnitude={swingBoost.magnitude}");
