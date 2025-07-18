@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     private EndColliderGenerator endLevel;
     private LevelCompletedUi endLevelUi;
     private BranchCorridorGenerator generator;
+    private PathChaser chaser;
 
     private void Awake()
     {
@@ -22,12 +23,17 @@ public class GameManager : MonoBehaviour
         endLevel = FindFirstObjectByType<EndColliderGenerator>();
         endLevel.OnTriggeredEvent.AddListener(OnLevelCompleted);
         generator = FindFirstObjectByType<BranchCorridorGenerator>();
+        chaser = FindFirstObjectByType<PathChaser>();
     }
     private void Start()
     {
         GenerateNextLevel();
     }
-    void OnLevelCompleted() => endLevelUi.Display(true);
+    void OnLevelCompleted()
+    {
+        endLevelUi.Display(true);
+        chaser.Clean();
+    }
     void GenerateNextLevel()
     {
         endLevelUi.Display(false);
@@ -37,7 +43,16 @@ public class GameManager : MonoBehaviour
         player.transform.rotation = playerOriginRot;
         player.StopVelocity();
         player.SetKinematic(true);
-        Invoke(nameof(WakePlayer), 3f);
+        Invoke(nameof(StartLevel), 3f);
     }
-    void WakePlayer() => player.SetKinematic(false);
+    void StartLevel() 
+    {
+        player.SetKinematic(false);
+        chaser.player = player.transform; // make sure you have reference
+        chaser.baseSpeed = controller.startingForwardSpeed * 0.8f; 
+        chaser.speedIncreaseRate = 0.05f;
+        chaser.catchDistance = 3f;
+        chaser.transform.position = playerTransform.position - playerTransform.forward * 5f;
+        chaser.Start();
+    }
 }
