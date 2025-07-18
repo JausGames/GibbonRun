@@ -53,7 +53,8 @@ public class GameManager : MonoBehaviour
         chaser.speedIncreaseRate = 0.05f;
         chaser.catchDistance = 3f;
         chaser.transform.position = player.transform.position - player.transform.forward * 5f;
-    
         chaser.StartChase(); 
+
+        ScoreManager.Instance?.StartRun(playerStartPosition);
     }
 }
