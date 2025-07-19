@@ -52,7 +52,7 @@ public class TriggerSVFX
             renderers.ForEach(e => e.Play(owner, position, rotation));
 
             animations.ForEach(a => a.Play());
-            sources.AddRange(sounds.Select(s => GameSVfx.PlaySoundOneShot(s, volume.HasValue ? volume.Value : GameSVfx.Volumes.weaponTriggered, owner)));
+            sources.AddRange(sounds.Select(s => GameSVfx.PlaySoundOneShot(s, volume.HasValue ? volume.Value : GameSVfx.Volumes.vDefault, owner)));
 
             var total = new List<TriggerEffectBase>();
             total.AddRange(effects);

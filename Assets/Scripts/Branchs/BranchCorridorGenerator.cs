@@ -6,23 +6,8 @@ public class BranchCorridorGenerator : MonoBehaviour
 {
     [Header("Branch Settings")]
     public List<HexBranchGenerator> branchPrefabs;
-    public int numberOfBranches = 50;
-
-    [Header("Path Variation")]
-    public float minForwardOffset = 4f;
-    public float maxForwardOffset = 8f;
-    public float maxYawAngle = 10f;
-    public float maxPitchAngle = 5f;
-    public float maxHeightDelta = 1f;
-    public float startHeight = 3f;
-    public float maxLateralDelta = 0.5f;
+    public LevelConfig config;
     public Vector3 firstConnectorPosition = new Vector3(0f, 5f, 16f);
-
-    [Header("Secondary Paths")]
-    public int numberOfSecondaryPaths = 2;
-    public int secondaryBranches = 20;
-    public int minSplitIndex = 10;
-    public int maxJoinIndex = 40;
 
     [Header("Ground")]
     public GroundMeshGenerator groundGenerator;
@@ -32,20 +17,21 @@ public class BranchCorridorGenerator : MonoBehaviour
     private List<Branch> mainBranchs = new();
     private List<Branch> secondaryBranchs = new();
     private Transform lastConnector;
- 
-    internal void GenerateLevel() 
+
+    internal void GenerateLevel(LevelConfig config)
     {
+        this.config = config;
         Clean();
-        Vector3 mainStart = new Vector3(0f, startHeight, 0f);
+        Vector3 mainStart = new Vector3(0f, config.startHeight, 0f);
         Vector3 mainForward = Vector3.forward;
-        pathPoints = GeneratePath(mainStart, mainForward, numberOfBranches);
+        pathPoints = GeneratePath(mainStart, mainForward, config.numberOfBranches);
 
         GenerateCorridor(pathPoints, isMain: true);
 
-        for (int i = 0; i < numberOfSecondaryPaths; i++)
+        for (int i = 0; i < config.numberOfSecondaryPaths; i++)
         {
-            int splitIndex = Random.Range(minSplitIndex, maxJoinIndex - secondaryBranches);
-            int joinIndex = splitIndex + secondaryBranches;
+            int splitIndex = Random.Range(config.minSplitIndex, config.maxJoinIndex - config.secondaryBranches);
+            int joinIndex = splitIndex + config.secondaryBranches;
 
             if (joinIndex >= pathPoints.Count)
                 continue;
@@ -65,7 +51,7 @@ public class BranchCorridorGenerator : MonoBehaviour
             Vector3 control1 = splitPoint + lateral * lateralOffset + Vector3.up * 5f;
             Vector3 control2 = joinPoint + lateral * lateralOffset + Vector3.up * 5f;
 
-            List<Vector3> bezierPath = GenerateBezierPath(splitPoint, control1, control2, joinPoint, secondaryBranches);
+            List<Vector3> bezierPath = GenerateBezierPath(splitPoint, control1, control2, joinPoint, config.secondaryBranches);
             GenerateCorridor(bezierPath, isMain: false);
         }
 
@@ -77,12 +63,11 @@ public class BranchCorridorGenerator : MonoBehaviour
     {
         List<Vector3> controlPoints = new();
         Vector3 pos = startPos;
-
         for (int i = 0; i < numBranches; i++)
         {
-            float forwardOffset = Random.Range(minForwardOffset, maxForwardOffset);
-            float verticalOffset = Random.Range(-maxHeightDelta, maxHeightDelta);
-            float yaw = Random.Range(-maxYawAngle, maxYawAngle);
+            float forwardOffset = Random.Range(config.minForwardOffset, config.maxForwardOffset);
+            float verticalOffset = Random.Range(-config.maxHeightDelta, config.maxHeightDelta);
+            float yaw = Random.Range(-config.maxYawAngle, config.maxYawAngle);
 
             forward = Quaternion.Euler(0, yaw, 0) * forward;
             pos += forward * forwardOffset + new Vector3(0, verticalOffset, 0);
@@ -153,7 +138,7 @@ public class BranchCorridorGenerator : MonoBehaviour
             Vector3 up = Vector3.Cross(forward, right);
             Quaternion pathRotation = Quaternion.LookRotation(forward, up);
 
-            float pitch = Random.Range(-maxPitchAngle, maxPitchAngle);
+            float pitch = Random.Range(-config.maxPitchAngle, config.maxPitchAngle);
             Quaternion finalRotation = pathRotation * Quaternion.Euler(pitch, 0, 0);
 
             HexBranchGenerator branchGen = Instantiate(selectedPrefab, Vector3.zero, finalRotation, transform);
@@ -170,6 +155,7 @@ public class BranchCorridorGenerator : MonoBehaviour
 
             if (i == 0 && isMain)
             {
+
                 Vector3 delta = firstConnectorPosition - branch.Connector.position;
                 branch.transform.position += delta;
             }
@@ -180,9 +166,9 @@ public class BranchCorridorGenerator : MonoBehaviour
                 Vector3 delta = localLastConnector.position - branch.Connector.position;
                 Vector3 lateralOffset = Vector3.Project(delta, lateralAxis);
 
-                if (lateralOffset.magnitude > maxLateralDelta)
+                if (lateralOffset.magnitude > config.maxLateralDelta)
                 {
-                    lateralOffset = lateralOffset.normalized * (lateralOffset.magnitude - maxLateralDelta);
+                    lateralOffset = lateralOffset.normalized * (lateralOffset.magnitude - config.maxLateralDelta);
                     branch.transform.position += lateralOffset;
                 }
             }

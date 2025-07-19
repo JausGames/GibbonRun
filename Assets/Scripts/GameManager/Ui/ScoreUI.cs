@@ -12,9 +12,9 @@ public class ScoreUI : MonoBehaviour
     {
         if (!ScoreManager.Instance) return;
 
-        totalScoreText.text = $"Score: {ScoreManager.Instance.GetTotalScore():0}";
-        distanceText.text = $"Distance: {ScoreManager.Instance.DistanceScore:0}";
-        swingText.text = $"Swings: {ScoreManager.Instance.SwingScore:0}";
-        speedText.text = $"Speed Bonus: {ScoreManager.Instance.SpeedBonus:0}";
+        totalScoreText.text = $"{ScoreManager.Instance.GetTotalScore():0}";
+        distanceText.text = $"{ScoreManager.Instance.TimeScore:0}";
+        swingText.text = $"{ScoreManager.Instance.SwingScore:0}";
+        speedText.text = $"{ScoreManager.Instance.SpeedBonus:0}";
     }
 }

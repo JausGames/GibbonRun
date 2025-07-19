@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using Cinemachine;
 using System.Linq;
 using System.Collections.Generic;
+using System;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
@@ -26,7 +27,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Forward Speed")]
     public float startingForwardSpeed = 20f;
-    public float minForwardSpeed = 10f;
+    private float minForwardSpeed = 10f;
 
     [Header("Grapple Settings")]
     public float grappleRange = 10f;
@@ -49,9 +50,12 @@ public class PlayerController : MonoBehaviour
     private PlayerInputs inputs;
     private bool isGrounded;
     private float ungroundedStartTime = 0f;
-    private SpringJoint currentJoint; 
+    private SpringJoint currentJoint;
 
     public bool IsGrounded => isGrounded;
+
+    public float MinForwardSpeed { get => minForwardSpeed; set => minForwardSpeed = value; }
+    public PlayerStatus Status { get; private set; }
 
     void Awake()
     {
@@ -67,7 +71,7 @@ public class PlayerController : MonoBehaviour
         }
         rb = GetComponent<Rigidbody>();
         inputs = GetComponent<PlayerInputs>();
-        rb.linearVelocity = transform.forward * startingForwardSpeed; 
+        rb.linearVelocity = transform.forward * startingForwardSpeed;
     }
 
     void Start()
@@ -82,7 +86,7 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = rb.linearVelocity - rb.linearVelocity.y * Vector3.up;
             rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
             inputs.Jump = false;
-            
+
             DebugOverlayLog("Jumped");
         }
         if (!isGrounded)
@@ -100,7 +104,7 @@ public class PlayerController : MonoBehaviour
             else if (!inputs.Jump && currentJoint != null)
             {
                 ReleaseGrapple();
-            } 
+            }
         }
     }
 
@@ -157,12 +161,12 @@ public class PlayerController : MonoBehaviour
         isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
         if (!isGrounded && wasGrounded)
         {
-            ungroundedStartTime = Time.time; 
+            ungroundedStartTime = Time.time;
         }
-        else if(isGrounded && !wasGrounded)
-        { 
+        else if (isGrounded && !wasGrounded)
+        {
             if (currentJoint != null)
-                ReleaseGrapple(applyBoost: false); 
+                ReleaseGrapple(applyBoost: false);
 
             inputs.Jump = false;
         }
@@ -221,7 +225,7 @@ public class PlayerController : MonoBehaviour
 
         if (arms.IndexOf(currentArm) == 0) animator.SetBool("SwingL", true);
         else animator.SetBool("SwingR", true);
-        
+
         DebugOverlayLog("Grappled");
     }
 
@@ -237,7 +241,7 @@ public class PlayerController : MonoBehaviour
             else animator.SetBool("SwingR", false);
 
             hands[arms.IndexOf(currentArm)].enabled = false;
-            currentArm.enabled = false; 
+            currentArm.enabled = false;
         }
 
         if (!applyBoost) return;
@@ -273,8 +277,9 @@ public class PlayerController : MonoBehaviour
 
         var ui = Instantiate(grappleUi, canvas.transform);
         ui.PlayAnim(boost / swingBoostForce);
-        
-        ScoreManager.Instance?.RegisterSwingSuccess();
+
+        if (Status.IsRunning)
+            ScoreManager.Instance?.RegisterSwingSuccess(boost / swingBoostForce);
 
         Debug.DrawRay(transform.position, swingBoost.normalized * 2f, Color.magenta, 2f);
         Debug.Log($"Swing boost applied: angle={angle}, magnitude={swingBoost.magnitude}");
@@ -291,9 +296,11 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
     }
-    
+
     private void DebugOverlayLog(string message)
     {
         FindObjectOfType<DebugOverlay>()?.LogEvent(message);
     }
+
+    internal void Init(PlayerStatus status) => Status = status;
 }

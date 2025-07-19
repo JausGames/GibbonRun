@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89062ecdec822814fbad7711d194496d, type: 3}
+  m_Name: LevelConfig - 03
+  m_EditorClassIdentifier: 
+  numberOfBranches: 70
+  minForwardOffset: 12
+  maxForwardOffset: 24
+  maxYawAngle: 20
+  maxPitchAngle: 10
+  maxHeightDelta: 6
+  startHeight: 5
+  maxLateralDelta: 0.5
+  numberOfSecondaryPaths: 2
+  secondaryBranches: 20
+  minSplitIndex: 10
+  maxJoinIndex: 40

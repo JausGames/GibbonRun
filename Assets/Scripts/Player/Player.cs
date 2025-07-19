@@ -4,7 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class PlayerStatus
+{ 
+    public bool IsRunning{ get; set; } = false;
+}
+
+    public class Player : MonoBehaviour
 {
     private Rigidbody rb;
     private PlayerController controller;
@@ -13,10 +18,15 @@ public class Player : MonoBehaviour
     public CinemachineFreeLook freeLookCamera;
     public PlayerController Controller => controller;
 
+    public Rigidbody Rigidbody => rb;
+
+    public PlayerStatus Status { get; } = new PlayerStatus();
+
     void Awake()
     {
         animator = GetComponentInChildren<Animator>();
         controller = GetComponent<PlayerController>();
+        controller.Init(Status);
         freeLookCamera = GetComponent<CinemachineFreeLook>();
         rb = GetComponent<Rigidbody>();
     }
@@ -32,7 +42,7 @@ public class Player : MonoBehaviour
 
     private void UpdateAnimator()
     {
-        float currSpeed = Mathf.InverseLerp(controller.minForwardSpeed, controller.startingForwardSpeed, rb.linearVelocity.magnitude);
+        float currSpeed = Mathf.InverseLerp(controller.MinForwardSpeed, controller.startingForwardSpeed, rb.linearVelocity.magnitude);
         animator.SetFloat("Speed", Mathf.MoveTowards(animator.GetFloat("Speed"), currSpeed, Time.deltaTime * 2f));
         animator.SetBool("Grounded", controller.IsGrounded);
     }
@@ -48,5 +58,13 @@ public class Player : MonoBehaviour
     {
       freeLookCamera.m_XAxis.Value = 0f;
       freeLookCamera.m_YAxis.Value = 0.5f;
+    }
+
+    internal void StopRun() => Status.IsRunning = false;
+
+    internal void StartRun()
+    {
+        SetKinematic(false);
+        Status.IsRunning = true;
     }
 }
