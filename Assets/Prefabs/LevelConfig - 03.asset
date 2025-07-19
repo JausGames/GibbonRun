@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89062ecdec822814fbad7711d194496d, type: 3}
   m_Name: LevelConfig - 03
   m_EditorClassIdentifier: 
-  numberOfBranches: 70
-  minForwardOffset: 12
-  maxForwardOffset: 24
-  maxYawAngle: 20
-  maxPitchAngle: 10
-  maxHeightDelta: 6
+  numberOfBranches: 65
+  minForwardOffset: 15
+  maxForwardOffset: 27
+  maxYawAngle: 26
+  maxPitchAngle: 13
+  maxHeightDelta: 10
   startHeight: 5
-  maxLateralDelta: 0.5
-  numberOfSecondaryPaths: 2
-  secondaryBranches: 20
+  maxLateralDelta: 1.55
+  numberOfSecondaryPaths: 3
+  secondaryBranches: 25
   minSplitIndex: 10
-  maxJoinIndex: 40
+  maxJoinIndex: 55
