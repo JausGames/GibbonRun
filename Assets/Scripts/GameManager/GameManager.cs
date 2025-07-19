@@ -43,7 +43,6 @@ public class GameManager : MonoBehaviour
     }
     void GenerateNextLevel()
     {
-        currLevel++;
         endLevelUi.Display(false);
         generator.Clean();
         generator.GenerateLevel(levelConfigs[currLevel]);
@@ -54,6 +53,7 @@ public class GameManager : MonoBehaviour
         player.SetKinematic(true);
 
         Invoke(nameof(StartLevel), 3f);
+        currLevel++;
     }
     void StartLevel() 
     { 

@@ -18,4 +18,5 @@ public class LevelConfig : ScriptableObject
     public int secondaryBranches = 20;
     public int minSplitIndex = 10;
     public int maxJoinIndex = 40;
+    public int curvature = 5;
 }

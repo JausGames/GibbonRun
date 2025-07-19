@@ -7,13 +7,14 @@ public class BranchCorridorGenerator : MonoBehaviour
     [Header("Branch Settings")]
     public List<HexBranchGenerator> branchPrefabs;
     public LevelConfig config;
-    public Vector3 firstConnectorPosition = new Vector3(0f, 5f, 16f);
+    public Vector3 firstConnectorPosition = new Vector3(0f, 16f, 16f);
 
     [Header("Ground")]
     public GroundMeshGenerator groundGenerator;
     public EndColliderGenerator endGenerator;
 
     private List<Vector3> pathPoints = new();
+    private List<Vector3> secondaryPathPoints = new();
     private List<Branch> mainBranchs = new();
     private List<Branch> secondaryBranchs = new();
     private Transform lastConnector;
@@ -31,33 +32,42 @@ public class BranchCorridorGenerator : MonoBehaviour
         for (int i = 0; i < config.numberOfSecondaryPaths; i++)
         {
             int splitIndex = Random.Range(config.minSplitIndex, config.maxJoinIndex - config.secondaryBranches);
-            int joinIndex = splitIndex + config.secondaryBranches;
+            int joinIndex = splitIndex + config.secondaryBranches - config.curvature;
 
             if (joinIndex >= pathPoints.Count)
                 continue;
 
             Vector3 splitPoint = pathPoints[splitIndex];
             Vector3 joinPoint = pathPoints[joinIndex];
-
-            // Generate offDirection with min angle between paths
             Vector3 mainDirection = (joinPoint - splitPoint).normalized;
-            float angle = Random.Range(45f, 120f) * (Random.value < 0.5f ? -1f : 1f);
-            Vector3 offDirection = Quaternion.Euler(0, angle, 0) * mainDirection;
 
-            // Generate lateral Bezier curve
-            Vector3 lateral = Vector3.Cross(Vector3.up, mainDirection).normalized;
-            float lateralOffset = 15f;
+            // Lateral direction from main path
+            Vector3 lateral = Mathf.Sign((i % 2) - 1) * Vector3.Cross(Vector3.up, mainDirection).normalized;
 
-            Vector3 control1 = splitPoint + lateral * lateralOffset + Vector3.up * 5f;
-            Vector3 control2 = joinPoint + lateral * lateralOffset + Vector3.up * 5f;
+            float splitAndJoinArcOffset = config.maxForwardOffset;
+            float midArcOffset = (float)config.curvature * config.minForwardOffset * .7f;
+            float verticalArc = (float)config.curvature * config.maxHeightDelta * .7f;
+            float forwardBend = Vector3.Distance(splitPoint, joinPoint) * 0.3f; 
 
-            List<Vector3> bezierPath = GenerateBezierPath(splitPoint, control1, control2, joinPoint, config.secondaryBranches);
+            // Compute midpoint and tangent-aligned offset
+            Vector3 midpoint = (splitPoint + joinPoint) * 0.5f;
+            Vector3 centerLateral =  lateral * midArcOffset;
+            Vector3 midAdjusted = midpoint + centerLateral + Vector3.up * verticalArc;
+
+            // Adjust end-points for smooth flow
+            Vector3 startAdjusted = splitPoint + lateral * splitAndJoinArcOffset;
+            Vector3 endAdjusted = joinPoint + lateral * splitAndJoinArcOffset;
+
+            List<Vector3> bezierPath = SampleBezierByDistance(new List<Vector3>() { startAdjusted, midAdjusted, endAdjusted }, config.minForwardOffset, config.maxForwardOffset);
+            secondaryPathPoints.AddRange(bezierPath);
             GenerateCorridor(bezierPath, isMain: false);
         }
+
 
         groundGenerator.GenerateMesh(mainBranchs.Select(b => b.Connector.position).ToList());
         endGenerator.GenerateLevelEnd(mainBranchs.Last());
     }
+
 
     List<Vector3> GeneratePath(Vector3 startPos, Vector3 forward, int numBranches)
     {
@@ -94,29 +104,87 @@ public class BranchCorridorGenerator : MonoBehaviour
                 controlPoints[seg + 2],
                 controlPoints[seg + 3],
                 localT
-            );
+            );  
+
+            // Clamp Y to a minimum of 12
+            if (point.y < firstConnectorPosition.y)
+                point.y = firstConnectorPosition.y;
 
             path.Add(point);
         }
 
+        var yMin = path.Min(p => p.y);
+        var delta = firstConnectorPosition.y - yMin;
+        path.ForEach(p => p.y += delta);
+
         return path;
-    } 
+    }
 
 
-    List<Vector3> GenerateBezierPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, int count)
+    List<Vector3> GenerateBezierPath(List<Vector3> controlPoints, int count)
     {
         List<Vector3> result = new();
+
+        int n = controlPoints.Count - 1;
+        if (n < 1) return result;
+
         for (int i = 0; i < count; i++)
         {
             float t = i / (float)(count - 1);
-            Vector3 point = Mathf.Pow(1 - t, 3) * p0 +
-                            3 * Mathf.Pow(1 - t, 2) * t * p1 +
-                            3 * (1 - t) * Mathf.Pow(t, 2) * p2 +
-                            Mathf.Pow(t, 3) * p3;
+            Vector3 point = Vector3.zero;
+
+            for (int j = 0; j <= n; j++)
+            {
+                float binomial = BinomialCoefficient(n, j);
+                float weight = binomial * Mathf.Pow(1 - t, n - j) * Mathf.Pow(t, j);
+                point += weight * controlPoints[j];
+            }
+
             result.Add(point);
         }
+
         return result;
     }
+
+    float BinomialCoefficient(int n, int k)
+    {
+        return Factorial(n) / (Factorial(k) * Factorial(n - k));
+    }
+
+    float Factorial(int x)
+    {
+        float result = 1;
+        for (int i = 2; i <= x; i++)
+            result *= i;
+        return result;
+    }
+    List<Vector3> SampleBezierByDistance(List<Vector3> controlPoints, float minDistance, float maxDistance)
+    {
+        const int resolution = 100; // High res to estimate distance
+        List<Vector3> dense = GenerateBezierPath(controlPoints, resolution);
+
+        List<Vector3> spacedPoints = new();
+        spacedPoints.Add(dense[0]);
+
+        float accumulated = 0f;
+        float nextSpacing = Random.Range(minDistance, maxDistance);
+
+        for (int i = 1; i < dense.Count; i++)
+        {
+            float segment = Vector3.Distance(dense[i], dense[i - 1]);
+            accumulated += segment;
+
+            if (accumulated >= nextSpacing)
+            {
+                spacedPoints.Add(dense[i]);
+                accumulated = 0f;
+                nextSpacing = Random.Range(minDistance, maxDistance);
+            }
+        }
+
+        return spacedPoints;
+    }
+
 
     void GenerateCorridor(List<Vector3> path, bool isMain)
     {
@@ -194,26 +262,26 @@ public class BranchCorridorGenerator : MonoBehaviour
             (-p0 + 3f * p1 - 3f * p2 + p3) * t * t * t
         );
     }
-    
+
     internal void Clean()
     {
         // Destroy all instantiated branches
         foreach (var branch in mainBranchs)
         {
-            if (branch != null) 
-                DestroyImmediate(branch.gameObject); 
+            if (branch != null)
+                DestroyImmediate(branch.gameObject);
         }
         foreach (var branch in secondaryBranchs)
         {
-            if (branch != null) 
-                DestroyImmediate(branch.gameObject); 
+            if (branch != null)
+                DestroyImmediate(branch.gameObject);
         }
 
         secondaryBranchs.Clear();
         mainBranchs.Clear();
         pathPoints.Clear();
         lastConnector = null;
-        
+
         // Clean ground and end generators
         groundGenerator.Clean();
         endGenerator.Clean();
@@ -229,6 +297,14 @@ public class BranchCorridorGenerator : MonoBehaviour
             foreach (Vector3 point in pathPoints)
             {
                 Gizmos.DrawSphere(point, 5f);
+            }
+        }
+        Gizmos.color = Color.yellow;
+        if (pathPoints != null)
+        {
+            foreach (Vector3 point in secondaryPathPoints)
+            {
+                Gizmos.DrawSphere(point, 4f);
             }
         }
     }

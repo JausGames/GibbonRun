@@ -21,6 +21,7 @@ MonoBehaviour:
   startHeight: 5
   maxLateralDelta: 1.55
   numberOfSecondaryPaths: 3
-  secondaryBranches: 25
+  secondaryBranches: 30
   minSplitIndex: 10
   maxJoinIndex: 55
+  curvature: 12
