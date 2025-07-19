@@ -5,8 +5,8 @@ public class SpeedRing : MapObject
 {
     [Header("Boost Settings")]
     public float boostMultiplier = 1.5f; // Multiplie la vitesse
-    public float minBoostSpeed = 15f;    // Vitesse minimale garantie après boost
-    public float boostDuration = 0.5f;   // Temps pendant lequel la vitesse est boostée (optionnel)
+    public float minBoostSpeed = 15f;    // Vitesse minimale garantie aprï¿½s boost
+    public float boostDuration = 0.5f;   // Temps pendant lequel la vitesse est boostï¿½e (optionnel)
     public LayerMask playerLayer;
 
     private void Reset()
@@ -22,10 +22,10 @@ public class SpeedRing : MapObject
         if (rb == null) return;
 
         Vector3 forwardDir = other.transform.forward;
-        float currentSpeed = rb.velocity.magnitude;
+        float currentSpeed = rb.linearVelocity.magnitude;
 
         float targetSpeed = Mathf.Max(currentSpeed * boostMultiplier, minBoostSpeed);
-        rb.velocity = forwardDir.normalized * targetSpeed;
+        rb.linearVelocity = forwardDir.normalized * targetSpeed;
 
         Debug.Log($"Speed boosted to {targetSpeed} by SpeedRing.");
     }
